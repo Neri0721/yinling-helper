@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>银龄核查助手</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <div class="brand">
+      <div class="logo">✓</div>
+      <div>
+        <h1>银龄核查助手</h1>
+        <p class="slogan">先查权威来源，查不到就说不知道</p>
+      </div>
+    </div>
+    <div class="tools">
+      <button class="tool" id="fontMinus" title="缩小字号">A－</button>
+      <button class="tool" id="fontPlus" title="放大字号">A＋</button>
+    </div>
+  </header>
+
+  <div class="steps" id="steps">
+    <div class="step" data-step="1"><b>1</b> 说清楚是什么</div>
+    <div class="step" data-step="2"><b>2</b> 查权威来源</div>
+    <div class="step" data-step="3"><b>3</b> 给结论和建议</div>
+  </div>
+
+  <main class="grid">
+
+    <!-- 左：输入 -->
+    <section class="panel left">
+      <label class="label" for="input">把您看到的消息贴进来</label>
+      <textarea id="input" rows="7"
+        placeholder="例如：群里说这个保健品能根治糖尿病，还不用吃药了，是真的吗？"></textarea>
+
+      <div class="row">
+        <button class="btn primary" id="checkBtn">开始核查</button>
+        <button class="btn ghost" id="clearBtn">清空</button>
+      </div>
+
+      <div class="samples">
+        <span class="samples-label">没想好怎么问？点一个试试：</span>
+        <button class="chip" data-text="群里说这个保健品能根治糖尿病，不用吃药了，是真的吗？">保健品治病</button>
+        <button class="chip" data-text="有人打电话说我的银行账户涉嫌洗钱，要把钱转到安全账户，还要了验证码">冒充公检法</button>
+        <button class="chip" data-text="网上说下个月养老金发放方式要改，要先在链接里填银行卡号">养老金传言</button>
+      </div>
+
+      <div class="history">
+        <div class="history-head">
+          <span>最近查过</span>
+          <button class="linkbtn" id="clearHistory">清空记录</button>
+        </div>
+        <ul id="historyList"></ul>
+      </div>
+    </section>
+
+    <!-- 右：结果 -->
+    <section class="panel right" id="resultPanel">
+      <div class="placeholder" id="placeholder">
+        <div class="ph-icon">🔍</div>
+        <p>左边贴一句话，我帮您查一查</p>
+        <p class="ph-note">查不到官方说法时，我会直接告诉您“查不到”，不会瞎猜</p>
+      </div>
+
+      <div class="loading" id="loading" hidden>
+        <div class="spinner"></div>
+        <p id="loadingText">正在查权威来源…</p>
+      </div>
+
+      <!-- 澄清 -->
+      <div class="clarify" id="clarifyBox" hidden>
+        <h2 id="clarifyQuestion">您想核实的是哪一类呢？</h2>
+        <div class="options" id="clarifyOptions"></div>
+      </div>
+
+      <!-- 卡片 -->
+      <article class="card" id="card" hidden>
+        <div class="card-top">
+          <span class="badge" id="badge">高风险</span>
+          <span class="subject" id="subject"></span>
+        </div>
+
+        <h2 class="conclusion" id="conclusion"></h2>
+        <p class="explanation" id="explanation"></p>
+
+        <div class="evidence" id="evidenceBox">
+          <div class="ev-label">权威依据</div>
+          <p class="ev-summary" id="sourceSummary" hidden></p>
+          <blockquote id="evidence"></blockquote>
+          <div class="ev-src">
+            <span id="sourceName"></span>
+            <a id="sourceLink" href="#" target="_blank" rel="noopener">打开原文 ↗</a>
+          </div>
+        </div>
+
+        <div class="soft" id="softBox" hidden>
+          <div class="sf-label">常识提醒 · 不是官方结论</div>
+          <p id="softHint"></p>
+        </div>
+
+        <div class="action" id="actionBox">
+          <div class="ac-label">接下来这么做</div>
+          <p id="action"></p>
+        </div>
+
+        <p class="parent-note" id="parentNote" hidden></p>
+
+        <div class="card-actions">
+          <button class="btn primary" id="speakBtn">🔊 朗读</button>
+          <button class="btn on" id="btnAutoRead">🔁 自动朗读：开</button>
+          <button class="btn" id="shareBtn">📋 复制转给子女</button>
+          <button class="btn ghost" id="againBtn">再查一条</button>
+        </div>
+
+        <details class="json-box">
+          <summary>查看返回的 JSON（对接用）</summary>
+          <pre id="jsonOut"></pre>
+        </details>
+      </article>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <span>核查范围：中国互联网联合辟谣平台、12377、网信办、政府网、卫健委、疾控、市场监管、12315、公安部、药监局</span>
+    <span id="kbInfo"></span>
+  </footer>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

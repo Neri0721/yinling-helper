@@ -1,0 +1,21 @@
+# 语料与生成物（体积大，可本地重建）
+data/
+tools/out/
+tests/recall_report.md
+
+# 回抓/写回时的备份
+*.bak
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# 渲染与临时目录
+.dsh-office-*/
+*.log
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini

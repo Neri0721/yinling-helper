@@ -1,0 +1,181 @@
+/* 银龄核查助手 · 样式（浅色、大字号、高对比） */
+:root{
+  --bg:#f6f4ef;
+  --panel:#ffffff;
+  --line:#e3ddd2;
+  --text:#1f2733;
+  --dim:#5f6b7a;
+  --brand:#1f6feb;
+  --hi:#c62828;
+  --mid:#e08600;
+  --low:#2e7d32;
+  --none:#6b7280;
+  /* 默认字号：面向老人，基准放大到 20px（原来 17px） */
+  --fs:20px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:var(--fs)}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:"Microsoft YaHei UI","PingFang SC","Source Han Sans SC",system-ui,sans-serif;
+  line-height:1.75;
+  padding:28px 20px 40px;
+  -webkit-font-smoothing:antialiased;
+}
+.app{max-width:1180px;margin:0 auto}
+
+/* 顶部 */
+.top{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;margin-bottom:20px}
+.brand{display:flex;gap:14px;align-items:center}
+.logo{
+  width:52px;height:52px;border-radius:14px;background:var(--brand);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;
+  box-shadow:0 6px 18px rgba(31,111,235,.28)
+}
+h1{font-size:1.65rem;letter-spacing:1px}
+.slogan{color:var(--dim);font-size:.92rem;margin-top:2px}
+.tools{display:flex;gap:8px}
+.tool{
+  font:inherit;font-size:.9rem;padding:8px 14px;border-radius:10px;cursor:pointer;
+  background:var(--panel);border:1px solid var(--line);color:var(--text)
+}
+.tool:hover{border-color:var(--brand);color:var(--brand)}
+
+/* 步骤条 */
+.steps{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.step{
+  display:flex;align-items:center;gap:8px;padding:8px 16px;border-radius:999px;
+  background:#efece5;color:var(--dim);font-size:.9rem;border:1px solid transparent
+}
+.step b{
+  width:22px;height:22px;border-radius:50%;background:#d9d3c7;color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:.78rem
+}
+.step.active{background:#e8f1ff;color:var(--brand);border-color:#bcd8ff}
+.step.active b{background:var(--brand)}
+.step.done{background:#eaf6ec;color:var(--low);border-color:#c6e6cc}
+.step.done b{background:var(--low)}
+
+/* 布局 */
+.grid{display:grid;grid-template-columns:minmax(340px,1fr) minmax(420px,1.25fr);gap:20px;align-items:start}
+@media (max-width:960px){ .grid{grid-template-columns:1fr} }
+
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 10px 30px rgba(31,39,51,.06)}
+
+/* 输入区 */
+.label{display:block;font-weight:700;font-size:1.02rem;margin-bottom:10px}
+textarea{
+  width:100%;font:inherit;font-size:1.05rem;line-height:1.8;padding:14px 16px;
+  border:2px solid var(--line);border-radius:14px;resize:vertical;background:#fdfcf9;color:var(--text)
+}
+textarea:focus{outline:none;border-color:var(--brand);background:#fff}
+.row{display:flex;gap:10px;margin-top:14px}
+.btn{
+  font:inherit;font-size:1rem;padding:12px 22px;border-radius:12px;cursor:pointer;
+  background:#f1eee7;border:1px solid var(--line);color:var(--text);transition:.15s
+}
+.btn:hover{background:#e9e5db}
+.btn:active{transform:scale(.98)}
+.btn.primary{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:700;box-shadow:0 6px 16px rgba(31,111,235,.25)}
+.btn.primary:hover{background:#1a5fd0}
+.btn.ghost{background:transparent}
+.btn:disabled{opacity:.55;cursor:not-allowed;box-shadow:none}
+
+.samples{margin-top:18px}
+.samples-label{display:block;color:var(--dim);font-size:.86rem;margin-bottom:8px}
+.chip{
+  font:inherit;font-size:.9rem;padding:7px 14px;border-radius:999px;margin:0 8px 8px 0;
+  background:#eef3fb;border:1px solid #cfe0f7;color:#1d4f9a;cursor:pointer
+}
+.chip:hover{background:#e2ecfa}
+
+.history{margin-top:22px;border-top:1px dashed var(--line);padding-top:16px}
+.history-head{display:flex;justify-content:space-between;align-items:center;color:var(--dim);font-size:.86rem;margin-bottom:8px}
+.linkbtn{background:none;border:none;color:var(--dim);font:inherit;font-size:.86rem;cursor:pointer;text-decoration:underline}
+.linkbtn:hover{color:var(--hi)}
+#historyList{list-style:none;display:flex;flex-direction:column;gap:8px}
+#historyList li{
+  padding:9px 12px;border-radius:10px;background:#faf8f4;border:1px solid var(--line);
+  font-size:.9rem;cursor:pointer;display:flex;justify-content:space-between;gap:10px
+}
+#historyList li:hover{border-color:var(--brand)}
+#historyList li span:last-child{color:var(--dim);flex:0 0 auto}
+#historyList:empty::after{content:"还没有记录";color:#a9a294;font-size:.88rem}
+
+/* 占位/加载 */
+.placeholder{text-align:center;padding:60px 20px;color:var(--dim)}
+.ph-icon{font-size:44px;margin-bottom:12px}
+.ph-note{font-size:.86rem;color:#a9a294;margin-top:10px}
+.loading{text-align:center;padding:60px 20px;color:var(--dim)}
+.spinner{
+  width:44px;height:44px;margin:0 auto 16px;border-radius:50%;
+  border:4px solid #e6e0d4;border-top-color:var(--brand);animation:spin .9s linear infinite
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* 澄清 */
+.clarify h2{font-size:1.35rem;margin-bottom:16px}
+.options{display:flex;flex-direction:column;gap:10px}
+.options button{
+  font:inherit;font-size:1.05rem;text-align:left;padding:14px 18px;border-radius:12px;
+  background:#f7f9fd;border:2px solid #d7e4f7;color:#1d3d6b;cursor:pointer
+}
+.options button:hover{border-color:var(--brand);background:#eef4fd}
+
+/* 卡片 */
+.card-top{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.badge{
+  font-size:.95rem;font-weight:700;padding:6px 16px;border-radius:999px;color:#fff;background:var(--none)
+}
+.badge.hi{background:var(--hi)}
+.badge.mid{background:var(--mid)}
+.badge.low{background:var(--low)}
+.badge.none{background:var(--none)}
+.subject{color:var(--dim);font-size:.9rem;flex:1;min-width:180px}
+
+.conclusion{font-size:1.85rem;line-height:1.5;margin-bottom:12px;letter-spacing:.5px}
+.explanation{font-size:1.05rem;color:#39434f;margin-bottom:18px}
+
+.evidence{background:#faf8f3;border-left:5px solid var(--brand);border-radius:0 12px 12px 0;padding:14px 18px;margin-bottom:16px}
+.ev-label{font-size:.82rem;color:var(--brand);font-weight:700;letter-spacing:1px;margin-bottom:6px}
+blockquote{font-size:1rem;color:#2c3540;font-style:normal}
+
+/* 出处概括：老人看这一句就够了，所以放大加粗 */
+.ev-summary{font-size:1.12rem;line-height:1.75;color:#1f2937;font-weight:600;margin-bottom:8px}
+/* 原文摘录退为细节：小字、变灰、限高 */
+blockquote.is-detail{font-size:.86rem;color:#8a93a3;line-height:1.6;max-height:4.8em;overflow:hidden;
+  padding-top:6px;border-top:1px dashed #dcd8d0}
+.ev-src{display:flex;justify-content:space-between;gap:12px;margin-top:10px;font-size:.86rem;color:var(--dim);flex-wrap:wrap}
+.ev-src a{color:var(--brand);text-decoration:none}
+.ev-src a:hover{text-decoration:underline}
+
+/* 较弱来源（公开语料 / 网络参考）：换成灰色虚线，视觉上明显弱于权威依据 */
+.evidence.is-weak{background:#f6f6f4;border-left-color:#9aa4b2;border-left-style:dashed}
+.evidence.is-weak .ev-label{color:#6b7280}
+.evidence.is-weak blockquote{color:#4b5563}
+
+/* 非官方常识提醒：虚线边框 + 灰蓝，和"权威依据"刻意区分 */
+.soft{background:#f3f6fc;border:1.5px dashed #a9c2e8;border-radius:12px;padding:13px 18px;margin-bottom:16px}
+.sf-label{font-size:.8rem;color:#4a6fa5;font-weight:700;letter-spacing:.5px;margin-bottom:6px}
+.soft p{font-size:1rem;color:#3a4c66}
+
+.action{background:#fff4e5;border:1px solid #ffd9a8;border-radius:14px;padding:14px 18px;margin-bottom:16px}
+.ac-label{font-size:.82rem;color:#9a5b00;font-weight:700;letter-spacing:1px;margin-bottom:6px}
+.action p{font-size:1.12rem;font-weight:700;color:#7a4100}
+
+.parent-note{background:#f0f7ff;border:1px solid #cfe4ff;border-radius:12px;padding:12px 16px;font-size:.95rem;color:#1d4f9a;margin-bottom:16px}
+
+.card-actions{display:flex;gap:10px;flex-wrap:wrap}
+
+/* 自动朗读开关：开着是绿色，关着是灰色 */
+#btnAutoRead.on{border-color:#86c99b;background:#eef9f1;color:#2e7d32}
+#btnAutoRead.off{color:#8a93a3}
+.json-box{margin-top:18px;font-size:.82rem;color:var(--dim)}
+.json-box summary{cursor:pointer}
+.json-box pre{
+  margin-top:10px;background:#1f2733;color:#d6e2f0;border-radius:10px;padding:14px;
+  overflow:auto;font-size:.8rem;line-height:1.6;max-height:320px
+}
+
+.foot{margin-top:22px;color:#a9a294;font-size:.8rem;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}

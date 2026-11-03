@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#1f6feb">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="银龄核查">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<title>银龄核查助手</title>
+<style>
+  :root{
+    --bg:#f6f4ef; --panel:#fff; --line:#e3ddd2; --text:#1f2733; --dim:#5f6b7a;
+    --brand:#1f6feb; --hi:#c62828; --mid:#e08600; --none:#6b7280;
+    --safe-b: env(safe-area-inset-bottom, 0px);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:"PingFang SC","Microsoft YaHei UI",system-ui,sans-serif;
+    font-size:19px; line-height:1.7;
+    padding:0 0 calc(96px + var(--safe-b));
+    -webkit-text-size-adjust:100%;
+    overscroll-behavior-y:contain;
+  }
+
+  /* 顶部 */
+  .top{
+    position:sticky; top:0; z-index:20;
+    background:linear-gradient(180deg,#fff 70%,rgba(255,255,255,.92));
+    border-bottom:1px solid var(--line);
+    padding:14px 16px 10px; display:flex; align-items:center; gap:10px;
+  }
+  .logo{width:38px;height:38px;border-radius:11px;background:var(--brand);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:700;flex:0 0 auto}
+  .top h1{font-size:1.15rem;margin:0;letter-spacing:.5px}
+  .top p{margin:2px 0 0;font-size:.72rem;color:var(--dim)}
+  .top .spacer{flex:1}
+  .top button{
+    border:1px solid var(--line);background:#fff;border-radius:10px;
+    font-size:.8rem;padding:8px 10px;color:var(--dim)
+  }
+
+  /* 卡片 */
+  main{padding:14px 14px 0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:14px;
+    box-shadow:0 8px 24px rgba(31,39,51,.06)}
+
+  .badge{display:inline-block;font-size:.85rem;font-weight:700;color:#fff;background:var(--none);
+    padding:5px 14px;border-radius:999px}
+  .badge.hi{background:var(--hi)} .badge.mid{background:var(--mid)} .badge.low{background:#2e7d32}
+  .subject{font-size:.8rem;color:var(--dim);margin:8px 0 2px}
+
+  /* 结论：手机上一眼能看清 */
+  .conclusion{font-size:1.7rem;line-height:1.45;margin:10px 0 12px;font-weight:800;letter-spacing:.5px}
+  .explanation{font-size:1rem;color:#39434f;margin:0 0 14px}
+
+  .block{border-radius:14px;padding:14px;margin-bottom:14px}
+  .block .lbl{font-size:.76rem;font-weight:700;letter-spacing:.5px;margin-bottom:6px}
+
+  .ev{background:#faf8f3;border-left:5px solid var(--brand)}
+  .ev .lbl{color:var(--brand)}
+  .ev p{margin:0;font-size:1.05rem;font-weight:600;color:#1f2937}
+  .ev .quote{margin-top:8px;padding-top:8px;border-top:1px dashed #dcd8d0;
+    font-size:.8rem;color:#8a93a3;display:-webkit-box;-webkit-line-clamp:2;
+    -webkit-box-orient:vertical;overflow:hidden}
+  .ev .src{display:flex;justify-content:space-between;gap:10px;margin-top:10px;font-size:.8rem;color:var(--dim)}
+  .ev .src a{color:var(--brand);text-decoration:none}
+  .ev.weak{background:#f6f6f4;border-left:5px dashed #9aa4b2}
+  .ev.weak .lbl{color:#6b7280}
+
+  .soft{background:#f3f6fc;border:1.5px dashed #a9c2e8}
+  .soft .lbl{color:#4a6fa5}
+  .soft p{margin:0;font-size:1rem;color:#3a4c66}
+
+  .act{background:#fff4e5;border:1px solid #ffd9a8}
+  .act .lbl{color:#9a5b00}
+  .act p{margin:0;font-size:1.15rem;font-weight:800;color:#7a4100}
+
+  /* 大按钮 */
+  .actions{display:flex;gap:10px;margin-top:4px}
+  .actions button{
+    flex:1;border:none;border-radius:14px;padding:15px 10px;font-size:1.02rem;font-weight:700;
+    background:#eef1f6;color:#1f2733
+  }
+  .actions button.primary{background:var(--brand);color:#fff}
+  .actions button:active{transform:scale(.98)}
+
+  /* 澄清 */
+  .opts{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+  .opts button{
+    text-align:left;font-size:1.05rem;padding:16px;border-radius:14px;
+    background:#f7f9fd;border:2px solid #d7e4f7;color:#1d3d6b
+  }
+
+  /* 底部输入区（固定） */
+  .composer{
+    position:fixed;left:0;right:0;bottom:0;z-index:30;
+    background:rgba(255,255,255,.97);border-top:1px solid var(--line);
+    padding:10px 12px calc(10px + var(--safe-b));
+    display:flex;gap:8px;align-items:flex-end;
+    backdrop-filter:blur(6px);
+  }
+  .composer textarea{
+    flex:1;min-height:52px;max-height:120px;resize:none;
+    font:inherit;font-size:1.02rem;line-height:1.5;
+    padding:12px 14px;border:2px solid var(--line);border-radius:14px;background:#fdfcf9;color:var(--text)
+  }
+  .composer textarea:focus{outline:none;border-color:var(--brand);background:#fff}
+  .composer button{
+    flex:0 0 auto;border:none;border-radius:14px;background:var(--brand);color:#fff;
+    font-size:1.02rem;font-weight:700;padding:0 20px;height:52px
+  }
+  .composer button:disabled{opacity:.5}
+  .composer .cam{
+    flex:0 0 auto;width:52px;padding:0;font-size:1.5rem;line-height:1;
+    background:#eef4ff;color:#1f6feb;border:2px solid #d7e4f7
+  }
+  .composer .cam:disabled{opacity:.5}
+
+  /* 拍照核查的临时提示条 */
+  .modeNote{
+    position:fixed;left:0;right:0;z-index:29;
+    bottom:calc(84px + var(--safe-b));
+    margin:0 12px;padding:10px 14px;border-radius:12px;
+    background:#fff8e6;border:1px solid #f0d9a8;color:#8a5a00;
+    font-size:.9rem;line-height:1.5;box-shadow:0 6px 18px rgba(31,39,51,.08)
+  }
+  .modeNote.bad{background:#fdecec;border-color:#f3b4b4;color:#a31515}
+
+  /* 状态 */
+  .hint{font-size:.82rem;color:#a9a294;text-align:center;padding:6px 0 0}
+  .loading{display:flex;flex-direction:column;align-items:center;gap:12px;padding:44px 0;color:var(--dim)}
+  .spin{width:38px;height:38px;border-radius:50%;border:4px solid #e6e0d4;border-top-color:var(--brand);
+    animation:sp .9s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  [hidden]{display:none !important}
+
+  /* 小屏再放大一点，老人好按 */
+  @media (max-width:400px){
+    body{font-size:20px}
+    .conclusion{font-size:1.6rem}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="logo">✓</div>
+  <div>
+    <h1>银龄核查</h1>
+    <p>先查权威来源，查不到就说不知道</p>
+  </div>
+  <div class="spacer"></div>
+  <button id="btnAuto">🔊 自动念</button>
+</header>
+
+<main>
+  <div class="card" id="welcome">
+    <p style="margin:0 0 10px;font-size:1.05rem">把您看到的消息贴进来，我帮您查一查。</p>
+    <p class="hint" style="text-align:left">查不到官方说法时，我会直接说“查不到”，不会瞎猜。</p>
+    <div class="opts" style="margin-top:14px">
+      <button data-q="群里说这个保健品能根治糖尿病，不用吃药了，是真的吗？">保健品治病</button>
+      <button data-q="有人打电话说我的银行账户涉嫌洗钱，要把钱转到安全账户，还要了验证码">冒充公检法</button>
+      <button data-q="喝骨头汤能补钙是真的吗">骨头汤补钙</button>
+    </div>
+  </div>
+
+  <div class="loading" id="loading" hidden>
+    <div class="spin"></div>
+    <div id="loadText">正在查权威来源…</div>
+  </div>
+
+  <div class="card" id="clarifyCard" hidden>
+    <div class="conclusion" id="clarifyQ">您想核实的是哪一类呢？</div>
+    <div class="opts" id="clarifyOpts"></div>
+  </div>
+
+  <div class="card" id="card" hidden>
+    <span class="badge" id="badge">高风险</span>
+    <div class="subject" id="subject"></div>
+    <div class="conclusion" id="conclusion"></div>
+    <p class="explanation" id="explanation"></p>
+
+    <div class="block ev" id="evBox" hidden>
+      <div class="lbl" id="evLabel">权威依据</div>
+      <p id="evSummary"></p>
+      <div class="quote" id="evQuote"></div>
+      <div class="src"><span id="evSrc"></span><a id="evLink" href="#" target="_blank" rel="noopener">打开原文 ↗</a></div>
+    </div>
+
+    <div class="block soft" id="softBox" hidden>
+      <div class="lbl">常识提醒 · 不是官方结论</div>
+      <p id="softText"></p>
+    </div>
+
+    <div class="block act" id="actBox">
+      <div class="lbl">接下来这么做</div>
+      <p id="action"></p>
+    </div>
+
+    <div class="actions">
+      <button class="primary" id="btnSpeak">🔊 念给我听</button>
+      <button id="btnShare">📋 发给子女</button>
+    </div>
+  </div>
+</main>
+
+<div class="modeNote" id="modeNote" hidden></div>
+
+<div class="composer">
+  <button class="cam" id="btnCam" type="button" aria-label="拍照或选截图">📷</button>
+  <textarea id="input" rows="1" placeholder="贴消息，或点 📷 拍照 / 选截图…"></textarea>
+  <button id="go">核查</button>
+</div>
+<input type="file" id="fileInput" accept="image/*" hidden>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const input = $("input"), go = $("go");
+  let last = null;
+  let autoRead = localStorage.getItem("yl.auto") !== "0";
+
+  function paintAuto() {
+    $("btnAuto").textContent = autoRead ? "🔊 自动念：开" : "🔇 自动念：关";
+    $("btnAuto").style.color = autoRead ? "#1f6feb" : "#8a93a3";
+  }
+  $("btnAuto").onclick = () => {
+    autoRead = !autoRead;
+    localStorage.setItem("yl.auto", autoRead ? "1" : "0");
+    paintAuto();
+    if (!autoRead && window.speechSynthesis) speechSynthesis.cancel();
+  };
+  paintAuto();
+
+  function speak(text) {
+    if (!window.speechSynthesis) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "zh-CN"; u.rate = 0.9; u.pitch = 1;
+    speechSynthesis.speak(u);
+  }
+
+  function show(which, txt) {
+    $("welcome").hidden = which !== "welcome";
+    $("loading").hidden = which !== "loading";
+    $("clarifyCard").hidden = which !== "clarify";
+    $("card").hidden = which !== "card";
+    if (txt) $("loadText").textContent = txt;
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  const LABELS = {
+    official: "权威依据",
+    dataset: "公开辟谣语料（非政府网站）",
+    media: "媒体报道（非政府公告）",
+    web: "网络参考 · 不是官方结论",
+  };
+
+  function renderCard(d) {
+    last = d;
+    $("badge").textContent = d.risk_level;
+    $("badge").className = "badge " + ({ "高风险": "hi", "中风险": "mid", "低风险": "low" }[d.risk_level] || "");
+    $("subject").textContent = d.check_subject ? "核查对象：" + d.check_subject : "";
+    $("conclusion").textContent = d.conclusion;
+    $("explanation").textContent = d.explanation || "";
+    $("action").textContent = d.action_advice;
+
+    const ev = $("evBox");
+    if (d.evidence) {
+      ev.hidden = false;
+      ev.classList.toggle("weak", d.source_tier === "web" || d.source_tier === "dataset");
+      $("evLabel").textContent = LABELS[d.source_tier] || "参考资料";
+      $("evSummary").textContent = d.source_summary || "";
+      $("evSummary").hidden = !d.source_summary;
+      $("evQuote").textContent = "原文：“" + d.evidence + "”";
+      $("evQuote").hidden = !d.source_summary;
+      $("evSrc").textContent = d.source_name || "";
+      if (d.source_url) {
+        $("evLink").href = d.source_url;
+        $("evLink").hidden = false;
+        $("evLink").textContent = d.source_tier === "web" ? "打开这个帖子 ↗" : "打开原文 ↗";
+      } else {
+        $("evLink").hidden = true;
+      }
+    } else {
+      ev.hidden = true;
+    }
+
+    if (d.soft_hint) { $("softBox").hidden = false; $("softText").textContent = d.soft_hint; }
+    else $("softBox").hidden = true;
+
+    show("card");
+    if (autoRead) {
+      const t = d.voice_script || (d.conclusion + "。" + (d.explanation || ""));
+      try { speak(t); } catch (e) {}
+    }
+  }
+
+  function renderClarify(d) {
+    $("clarifyQ").textContent = d.question;
+    const box = $("clarifyOpts");
+    box.innerHTML = "";
+    (d.options || []).forEach((o) => {
+      const b = document.createElement("button");
+      b.textContent = o;
+      b.onclick = () => {
+        input.value = (input.value.trim() || "我想核实：") + "（" + o + "）";
+        run();
+      };
+      box.appendChild(b);
+    });
+    show("clarify");
+  }
+
+  $("btnSpeak").onclick = () => { if (last) speak(last.voice_script || last.conclusion); };
+  $("btnShare").onclick = async () => {
+    if (!last) return;
+    const t = last.family_share_text || last.conclusion;
+    try {
+      await navigator.clipboard.writeText(t);
+      $("btnShare").textContent = "✅ 已复制";
+      setTimeout(() => ($("btnShare").textContent = "📋 发给子女"), 1600);
+    } catch { prompt("复制这段话发给子女：", t); }
+  };
+
+  document.querySelectorAll("[data-q]").forEach((b) => {
+    b.onclick = () => { input.value = b.dataset.q; run(); };
+  });
+
+  async function run() {
+    const text = input.value.trim();
+    if (text.length < 2) { input.focus(); return; }
+    go.disabled = true;
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    show("loading", "正在查权威来源…");
+    try {
+      const res = await fetch("/api/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      if (data.type === "clarify") renderClarify(data);
+      else renderCard(data);
+    } catch (e) {
+      show("welcome");
+      alert("核查失败：" + e.message + "\n请确认电脑上的服务开着，手机和电脑连同一个 Wi-Fi。");
+    } finally {
+      go.disabled = false;
+    }
+  }
+  go.onclick = run;
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); run(); }
+  });
+
+  // ---------------- 拍照 / 截图核查 ----------------
+  const btnCam = $("btnCam"), fileInput = $("fileInput"), note = $("modeNote");
+
+  function noteBox(msg, bad) {
+    note.hidden = !msg;
+    note.className = "modeNote" + (bad ? " bad" : "");
+    note.textContent = msg || "";
+  }
+
+  function compressImage(file, maxSide = 1600, quality = 0.82) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+        const w = Math.max(1, Math.round(img.width * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+        const c = document.createElement("canvas");
+        c.width = w; c.height = h;
+        c.getContext("2d").drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        resolve(c.toDataURL("image/jpeg", quality).split(",")[1]);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("读不出这张图片")); };
+      img.src = url;
+    });
+  }
+
+  async function checkImage(b64) {
+    btnCam.disabled = true;
+    go.disabled = true;
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    show("loading", "正在看图片上的字…");
+    try {
+      const res = await fetch("/api/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image: b64 }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || ("HTTP " + res.status));
+
+      if (data.type === "ocr_failed") {
+        show("welcome");
+        noteBox(data.message || "没认出字，换张清楚点的图试试。", true);
+        return;
+      }
+      if (data.ocr_provider === "mock") {
+        noteBox("演示模式：还没接入 OCR，这段文字是示例", true);
+      } else if (data.ocr_text) {
+        noteBox("已从图片认出 " + data.ocr_text.replace(/\s/g, "").length + " 个字，可以改");
+      }
+      if (data.ocr_text) input.value = data.ocr_text;
+      if (data.type === "clarify") renderClarify(data);
+      else renderCard(data);
+    } catch (e) {
+      show("welcome");
+      noteBox("图片核查失败：" + e.message, true);
+    } finally {
+      btnCam.disabled = false;
+      go.disabled = false;
+    }
+  }
+
+  btnCam.onclick = () => fileInput.click();
+
+  fileInput.onchange = async () => {
+    const f = (fileInput.files || [])[0];
+    fileInput.value = "";                       // 允许重复选同一张
+    if (!f) return;
+    if (!/^image\//.test(f.type)) { noteBox("请选一张图片", true); return; }
+    if (f.size > 20 * 1024 * 1024) { noteBox("这张图太大了，换一张试试", true); return; }
+    try {
+      const b64 = await compressImage(f);
+      await checkImage(b64);
+    } catch (e) {
+      noteBox("图片处理失败：" + e.message, true);
+    }
+  };
+
+  // 启动时探测服务端 OCR 模式，演示模式提前告知，避免现场误演
+  fetch("/api/health").then(r => r.json()).then(h => {
+    if (h && h.ocr && h.ocr.provider === "mock") {
+      noteBox("演示模式：未接入 OCR，拍照只能返回示例文字", true);
+    }
+  }).catch(() => {});
+
+  // 注册 Service Worker（可添加到主屏幕、离线打开界面）
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  }
+
+  fetch("/api/stats").then(r => r.json()).then(s => {
+    if (s && s.kb_items) {
+      const p = document.querySelector(".hint");
+      if (p) p.textContent = "知识库 " + s.kb_items + " 条 · 查不到官方说法时会直接说“查不到”";
+    }
+  }).catch(() => {});
+})();
+</script>
+</body>
+</html>
