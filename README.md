@@ -25,7 +25,6 @@ skill_ocr.py         独立的 OCR Skill 服务（供 AgentArts 编排）
 llm.py               本地模型封装（可选，不可用时退化为纯规则）
 mobile.html          手机版页面（拍照 / 说话 / 看结论 / 转发）
 index.html           桌面版页面（适合社区网格员批量核查）
-kb.json              源语料 20,122 条
 kb_elderly.json      银龄子集 3,288 条（导入平台用这一份）
 tools/               数据流水线：回抓、清洗、切分、测试集、召回评估
 docs/                方案书、编排图、交接说明、任务单
@@ -48,6 +47,9 @@ $env:HUAWEI_AK="..."; $env:HUAWEI_SK="..."; $env:HUAWEI_PROJECT_ID="..."
 ```
 
 ## 数据流水线
+
+> 原始语料 `kb.json`（11 MB，20,122 条）不入库——它来自第三方辟谣平台的转载内容，
+> 放进公开仓库不合适。仓库里保留的是已筛好的 `kb_elderly.json`；需要重建时跑下面的脚本。
 
 ```bash
 python tools/refetch_official.py      # 回抓官方正文
