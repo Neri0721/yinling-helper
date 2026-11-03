@@ -20,7 +20,17 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PROJ = os.path.dirname(HERE)
-KB_PATH = os.path.join(PROJ, "kb.json")
+
+
+def _kb_path():
+    for n in ("kb.json", "kb.json.local"):
+        p = os.path.join(PROJ, n)
+        if os.path.exists(p):
+            return p
+    raise SystemExit("找不到 kb.json 或 kb.json.local")
+
+
+KB_PATH = _kb_path()
 OUT_PATH = os.path.join(PROJ, "kb_elderly.json")
 
 GROUPS = {

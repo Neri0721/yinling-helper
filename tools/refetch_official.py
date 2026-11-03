@@ -23,7 +23,18 @@ import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PROJ = os.path.dirname(HERE)
-KB_PATH = os.path.join(PROJ, "kb.json")
+
+
+def _kb_path():
+    """全量语料可能叫 kb.json 或 kb.json.local（后者是因为部署时只认子集）"""
+    for n in ("kb.json", "kb.json.local"):
+        p = os.path.join(PROJ, n)
+        if os.path.exists(p):
+            return p
+    raise SystemExit("找不到 kb.json 或 kb.json.local，回抓无从下手")
+
+
+KB_PATH = _kb_path()
 
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36")

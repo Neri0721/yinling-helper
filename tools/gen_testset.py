@@ -26,7 +26,7 @@ import re
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PROJ = os.path.dirname(HERE)
-DATA = os.path.join(HERE, "out", "kb_import.jsonl")
+DATA = os.path.join(HERE, "out", "kb_import_elderly.jsonl")
 TEST_DIR = os.path.join(PROJ, "tests")
 
 PER_DOMAIN = 5

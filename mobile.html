@@ -80,6 +80,42 @@
   .act .lbl{color:#9a5b00}
   .act p{margin:0;font-size:1.15rem;font-weight:800;color:#7a4100}
 
+  /* 首屏双入口（任务三）：两枚大按钮，竖屏不滚动可见 */
+  .home{padding:22px 18px 18px;text-align:center}
+  .homeLead{margin:0 0 4px;font-size:1.25rem;font-weight:800;letter-spacing:.5px}
+  .big-actions{display:flex;flex-direction:column;gap:14px;margin:18px 0 12px}
+  .big{
+    display:flex;align-items:center;justify-content:center;gap:12px;
+    width:100%;border:none;border-radius:18px;padding:22px 16px;
+    font-size:1.22rem;font-weight:800;background:#eef1f6;color:#1f2733;
+    box-shadow:0 4px 12px rgba(31,39,51,.06)
+  }
+  .big .ico{font-size:1.55rem;line-height:1}
+  .big.primary{background:var(--brand);color:#fff}
+  .big:active{transform:scale(.98)}
+
+  /* 二级页：说句话 / 打字 */
+  .talk{padding:16px 18px 18px}
+  .talk .back{
+    border:none;background:transparent;color:var(--dim);
+    font-size:.95rem;padding:4px 0 10px;margin:0
+  }
+  .talkLead{margin:0 0 10px;font-size:1.05rem;font-weight:700;line-height:1.5}
+  .talk textarea{
+    width:100%;min-height:120px;resize:vertical;
+    font:inherit;font-size:1.02rem;line-height:1.6;
+    padding:14px;border:2px solid var(--line);border-radius:14px;
+    background:#fdfcf9;color:var(--text)
+  }
+  .talk textarea:focus{outline:none;border-color:var(--brand);background:#fff}
+  .voiceHint{margin:10px 0 0;font-size:.88rem;color:#a15c00;line-height:1.5}
+
+  /* 结果页：再查一条 */
+  .again{
+    width:100%;margin-top:10px;border:1px solid var(--line);background:#fff;
+    border-radius:14px;padding:13px;font-size:1rem;color:var(--dim)
+  }
+
   /* 大按钮 */
   .actions{display:flex;gap:10px;margin-top:4px}
   .actions button{
@@ -159,15 +195,33 @@
 </header>
 
 <main>
-  <div class="card" id="welcome">
-    <p style="margin:0 0 10px;font-size:1.05rem">把您看到的消息贴进来，我帮您查一查。</p>
-    <p class="hint" style="text-align:left">查不到官方说法时，我会直接说“查不到”，不会瞎猜。</p>
-    <div class="opts" style="margin-top:14px">
-      <button data-q="群里说这个保健品能根治糖尿病，不用吃药了，是真的吗？">保健品治病</button>
-      <button data-q="有人打电话说我的银行账户涉嫌洗钱，要把钱转到安全账户，还要了验证码">冒充公检法</button>
-      <button data-q="喝骨头汤能补钙是真的吗">骨头汤补钙</button>
+  <section class="card home" id="home">
+    <p class="homeLead">您想怎么查？</p>
+    <div class="big-actions">
+      <button class="big primary" id="btnPhoto" type="button"><span class="ico">📷</span>拍张照</button>
+      <button class="big" id="btnTalk" type="button"><span class="ico">🎤</span>说句话</button>
     </div>
-  </div>
+    <p class="hint" id="homeHint">查不到官方说法时，我会直接说“查不到”，不会瞎猜。</p>
+  </section>
+
+  <section class="card talk" id="talkPage" hidden>
+    <button class="back" id="btnBack" type="button">← 返回</button>
+    <p class="talkLead">把您看到的消息说给我听，或者打在这里</p>
+    <textarea id="talkInput" rows="4" placeholder="例如：群里说这个保健品能根治糖尿病，不用吃药了…"></textarea>
+    <p class="voiceHint" id="voiceHint" hidden></p>
+    <div class="actions">
+      <button class="primary" id="btnTalkGo" type="button">核查</button>
+      <button id="btnVoice" type="button">🎤 再说一遍</button>
+    </div>
+    <div style="margin-top:16px">
+      <p class="hint" style="text-align:left">不知道怎么说？点一个试试：</p>
+      <div class="opts" style="margin-top:10px">
+        <button data-q="群里说这个保健品能根治糖尿病，不用吃药了，是真的吗？">保健品治病</button>
+        <button data-q="有人打电话说我的银行账户涉嫌洗钱，要把钱转到安全账户，还要了验证码">冒充公检法</button>
+        <button data-q="喝骨头汤能补钙是真的吗">骨头汤补钙</button>
+      </div>
+    </div>
+  </section>
 
   <div class="loading" id="loading" hidden>
     <div class="spin"></div>
@@ -206,27 +260,23 @@
       <button class="primary" id="btnSpeak">🔊 念给我听</button>
       <button id="btnShare">📋 发给子女</button>
     </div>
+    <button class="again" id="btnAgain" type="button">↩ 再查一条</button>
   </div>
 </main>
 
 <div class="modeNote" id="modeNote" hidden></div>
 
-<div class="composer">
-  <button class="cam" id="btnCam" type="button" aria-label="拍照或选截图">📷</button>
-  <textarea id="input" rows="1" placeholder="贴消息，或点 📷 拍照 / 选截图…"></textarea>
-  <button id="go">核查</button>
-</div>
 <input type="file" id="fileInput" accept="image/*" hidden>
 
 <script>
 (() => {
   const $ = (id) => document.getElementById(id);
-  const input = $("input"), go = $("go");
+  const input = $("talkInput"), go = $("btnTalkGo");
   let last = null;
   let autoRead = localStorage.getItem("yl.auto") !== "0";
 
   function paintAuto() {
-    $("btnAuto").textContent = autoRead ? "🔊 自动念：开" : "🔇 自动念：关";
+    $("btnAuto").textContent = autoRead ? "🔊 语音播报：开" : "🔇 语音播报：关";
     $("btnAuto").style.color = autoRead ? "#1f6feb" : "#8a93a3";
   }
   $("btnAuto").onclick = () => {
@@ -246,7 +296,8 @@
   }
 
   function show(which, txt) {
-    $("welcome").hidden = which !== "welcome";
+    $("home").hidden = which !== "home";
+    $("talkPage").hidden = which !== "talk";
     $("loading").hidden = which !== "loading";
     $("clarifyCard").hidden = which !== "clarify";
     $("card").hidden = which !== "card";
@@ -349,8 +400,12 @@
       if (data.type === "clarify") renderClarify(data);
       else renderCard(data);
     } catch (e) {
-      show("welcome");
-      alert("核查失败：" + e.message + "\n请确认电脑上的服务开着，手机和电脑连同一个 Wi-Fi。");
+      show("talk");
+      if (!navigator.onLine) {
+        noteBox("现在没有网络。先别着急，连上 Wi-Fi 再试；刚才输入的内容还在。", true);
+      } else {
+        noteBox("暂时连不上核查服务。请确认电脑上的服务开着，手机和电脑连同一个 Wi-Fi。", true);
+      }
     } finally {
       go.disabled = false;
     }
@@ -360,8 +415,72 @@
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); run(); }
   });
 
+  // ---------------- 说句话 / 二级页 ----------------
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recog = null;
+
+  function startVoice() {
+    show("talk");
+    const hint = $("voiceHint");
+    if (!SR) {
+      hint.hidden = false;
+      hint.textContent = "这个浏览器不支持语音输入，您可以直接在这里打字。";
+      input.focus();
+      return;
+    }
+    hint.hidden = false;
+    hint.textContent = "正在听，请说话……说完会自动核查。";
+    try {
+      if (!recog) {
+        recog = new SR();
+        recog.lang = "zh-CN";
+        recog.interimResults = false;
+        recog.maxAlternatives = 1;
+        recog.onresult = (e) => {
+          const t = (e.results && e.results[0] && e.results[0][0]
+            && e.results[0][0].transcript) || "";
+          if (t) {
+            input.value = t;
+            hint.textContent = "听清了：" + t;
+            run();
+          }
+        };
+        recog.onerror = () => {
+          hint.textContent = "没听清，您可以直接打字，或再点一次“说句话”。";
+        };
+      }
+      recog.start();
+    } catch (e) {
+      hint.textContent = "语音输入没启动成功，您可以直接在这里打字。";
+      input.focus();
+    }
+  }
+
+  function stopVoice() {
+    try { if (recog) recog.stop(); } catch (e) {}
+  }
+
+  $("btnTalk").onclick = startVoice;
+  $("btnVoice").onclick = startVoice;
+  $("btnBack").onclick = () => { stopVoice(); show("home"); };
+  $("btnAgain").onclick = () => {
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    show("home");
+  };
+
+  // ---------------- 断网可读提示 ----------------
+  function offlineNotice() {
+    noteBox("现在没有网络。先别着急，连上 Wi-Fi 或等信号好了再试；界面和已查过的内容不会丢。", true);
+  }
+  window.addEventListener("offline", offlineNotice);
+  window.addEventListener("online", () => {
+    noteBox("网络恢复了，可以再查一次。");
+    setTimeout(() => { if (navigator.onLine) noteBox(""); }, 2500);
+  });
+  if (!navigator.onLine) offlineNotice();
+
   // ---------------- 拍照 / 截图核查 ----------------
-  const btnCam = $("btnCam"), fileInput = $("fileInput"), note = $("modeNote");
+  const btnPhoto = $("btnPhoto"), fileInput = $("fileInput"), note = $("modeNote");
 
   function noteBox(msg, bad) {
     note.hidden = !msg;
@@ -389,7 +508,7 @@
   }
 
   async function checkImage(b64) {
-    btnCam.disabled = true;
+    btnPhoto.disabled = true;
     go.disabled = true;
     if (window.speechSynthesis) speechSynthesis.cancel();
     show("loading", "正在看图片上的字…");
@@ -403,7 +522,7 @@
       if (!res.ok) throw new Error(data.error || ("HTTP " + res.status));
 
       if (data.type === "ocr_failed") {
-        show("welcome");
+        show("home");
         noteBox(data.message || "没认出字，换张清楚点的图试试。", true);
         return;
       }
@@ -416,15 +535,15 @@
       if (data.type === "clarify") renderClarify(data);
       else renderCard(data);
     } catch (e) {
-      show("welcome");
+      show("home");
       noteBox("图片核查失败：" + e.message, true);
     } finally {
-      btnCam.disabled = false;
+      btnPhoto.disabled = false;
       go.disabled = false;
     }
   }
 
-  btnCam.onclick = () => fileInput.click();
+  btnPhoto.onclick = () => fileInput.click();
 
   fileInput.onchange = async () => {
     const f = (fileInput.files || [])[0];
@@ -454,7 +573,7 @@
 
   fetch("/api/stats").then(r => r.json()).then(s => {
     if (s && s.kb_items) {
-      const p = document.querySelector(".hint");
+      const p = $("homeHint");
       if (p) p.textContent = "知识库 " + s.kb_items + " 条 · 查不到官方说法时会直接说“查不到”";
     }
   }).catch(() => {});

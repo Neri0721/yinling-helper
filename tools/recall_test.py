@@ -9,6 +9,9 @@
   - 它跑出来的数字，是平台向量检索要打赢的参照线；
   - 若平台召回比它还低，说明切分或元数据有问题，先修那个。
 
+口径：默认只读银龄子集 tools/out/kb_import_elderly.jsonl（3,188 块）。
+全量 kb.json 不入库，全量基线已作废，报告里只写子集口径。
+
 用法：
     python tools/recall_test.py            # 用 query_final，没填就用 query_draft
 产物：
@@ -24,7 +27,7 @@ import re
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PROJ = os.path.dirname(HERE)
-DATA = os.path.join(HERE, "out", "kb_import.jsonl")
+DATA = os.path.join(HERE, "out", "kb_import_elderly.jsonl")
 TESTSET = os.path.join(PROJ, "tests", "testset_20.csv")
 REPORT = os.path.join(PROJ, "tests", "recall_report.md")
 
@@ -70,9 +73,16 @@ def main():
         print("测试集是空的，先跑 gen_testset.py")
         return
 
+    idset = set(ids)
+    missing = [r["id"] for r, _q in rows if r.get("answer_id") not in idset]
+
     hits = {1: 0, 3: 0, 5: 0}
     lines = ["# 召回测试报告（基线检索器）\n",
-             "文档数 %d，测试问题 %d 条。\n" % (n, len(rows)),
+             "子集口径：文档 %d 块，测试问题 %d 条。\n" % (n, len(rows))]
+    if missing:
+        lines.append("说明：%d 条题目的 answer_id 不在子集内，子集口径下无法命中。\n"
+                     % len(missing))
+    lines += [
              "| # | 领域 | 问题 | Top1 命中 | 命中名次 |",
              "|---|---|---|---|---|"]
 
@@ -96,7 +106,7 @@ def main():
                 hits[kk] += 1
 
         lines.append("| %d | %s | %s | %s | %s |" % (
-            k, r["domain"], q[:26], top1,
+            k, r["domain"], q[:26].replace("|", "｜"), top1.replace("|", "｜"),
             ("第 %d 位" % rank) if rank else "未命中"))
 
     total = len(rows)

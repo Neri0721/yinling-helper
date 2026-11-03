@@ -16,6 +16,9 @@ from urllib.parse import urlparse
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 KB_PATH = os.path.join(HERE, "kb.json")
+KB_FALLBACK_PATH = os.path.join(HERE, "kb_elderly.json")
+KB_SOURCE = None
+OFFLINE = os.environ.get("OFFLINE") == "1"
 
 # 本地大模型（Ollama）——可选依赖，连不上就退回纯规则模式
 try:
@@ -33,6 +36,8 @@ except Exception as _e:  # pragma: no cover
     ocr = None
 
 MAX_IMAGE_BYTES = 8 * 1024 * 1024   # 单张图片上限，超过让前端压缩
+PROXY_TIMEOUT = 8                    # AgentArts 代理转发超时（秒）
+PROXY_MAX_BYTES = 1024 * 1024        # 代理请求体上限
 
 # 权威来源白名单（严格匹配域名后缀，防钓銇）
 WHITELIST = [
@@ -145,14 +150,27 @@ def extract_claim(text):
 
 
 def load_kb():
-    if not os.path.exists(KB_PATH):
-        return []
-    try:
-        with open(KB_PATH, encoding="utf-8") as f:
-            data = json.load(f)
-        return data.get("items", [])
-    except Exception:
-        return []
+    """按 kb.json → kb_elderly.json 顺序加载；都没有则返回 []，由启动处告警。
+
+    严禁静默变成 0 条：读到空文件也要打印来源，避免自测假绿。
+    """
+    global KB_SOURCE
+    for path in (KB_PATH, KB_FALLBACK_PATH):
+        if not os.path.exists(path):
+            continue
+        name = os.path.basename(path)
+        try:
+            with open(path, encoding="utf-8") as f:
+                data = json.load(f)
+            items = data.get("items", []) if isinstance(data, dict) else []
+        except Exception as e:
+            print("[WARN] 知识库读取失败 %s: %s" % (name, str(e)[:60]))
+            continue
+        if items:
+            KB_SOURCE = name
+            return items
+        print("[WARN] 知识库为空: %s" % name)
+    return []
 
 
 def kb_match(text, kb, limit=1):
@@ -182,6 +200,7 @@ def kb_match(text, kb, limit=1):
 import base64
 import gzip
 import html as _htmllib
+import urllib.error
 import urllib.parse
 import urllib.request
 import zlib
@@ -574,7 +593,7 @@ def build_card(text, kb):
     # 公开语料只靠阈值把关（模型复核会把真阳性误杀），但命中后仍会标注来源等级
 
     live = None
-    if not best and not ds_best:
+    if not best and not ds_best and not OFFLINE:
         try:
             live = live_search(text)
         except Exception as e:
@@ -720,6 +739,7 @@ def build_card(text, kb):
         "type": "card",
         "check_subject": claim,
         "risk_level": risk,
+        "verdict": "no_evidence" if evidence is None else "evidence_found",
         "conclusion": clip(conclusion, 30),
         "explanation": clip(explanation, 80),
         "evidence": evidence,
@@ -760,6 +780,9 @@ def clarify_card():
 
 
 KB = load_kb()
+if not KB:
+    print("[WARN] 知识库为空：kb.json 与 kb_elderly.json 均未加载到条目；"
+          "/api/check 将只能依赖联网检索（OFFLINE=1 时直接返回 no_evidence）。")
 
 
 # ---------------------------------------------------------------- HTTP
@@ -807,6 +830,9 @@ class Handler(BaseHTTPRequestHandler):
                 "ocr": st,
                 "llm": bool(llm and llm.available()),
                 "kb_items": len(KB),
+                "kb_source": KB_SOURCE,
+                "offline": OFFLINE,
+                "agent_configured": bool((os.environ.get("AGENT_BASE_URL") or "").strip()),
             })
         self._send(404, {"error": "not found"})
 
@@ -818,8 +844,65 @@ class Handler(BaseHTTPRequestHandler):
             data = f.read()
         self._send(200, data, ctype)
 
+    def _proxy(self):
+        """POST /api/proxy：转发到 AgentArts 部署地址，地址与 token 只从环境变量读。"""
+        base = (os.environ.get("AGENT_BASE_URL") or "").strip()
+        token = (os.environ.get("AGENT_TOKEN") or "").strip()
+        if not base:
+            return self._send(503, {
+                "type": "not_configured",
+                "message": "未配置 AGENT_BASE_URL，代理未启用；本地降级请调用 /api/check",
+            })
+        p = urlparse(base)
+        if p.scheme not in ("http", "https") or not p.hostname:
+            return self._send(503, {
+                "type": "not_configured",
+                "message": "AGENT_BASE_URL 不是合法的 http/https 地址",
+            })
+
+        try:
+            n = int(self.headers.get("Content-Length") or 0)
+        except Exception:
+            return self._send(400, {"type": "bad_request", "message": "bad content-length"})
+        if n > PROXY_MAX_BYTES:
+            return self._send(413, {"type": "too_large", "message": "payload exceeds 1 MB"})
+        body = self.rfile.read(n) if n else b"{}"
+
+        headers = {"Content-Type": self.headers.get("Content-Type")
+                   or "application/json; charset=utf-8"}
+        if token:
+            headers["Authorization"] = "Bearer " + token
+        req = urllib.request.Request(base, data=body, headers=headers, method="POST")
+        try:
+            with urllib.request.urlopen(req, timeout=PROXY_TIMEOUT) as r:
+                data = r.read()
+                ctype = r.headers.get("Content-Type") or "application/json; charset=utf-8"
+                return self._send(r.status, data, ctype)
+        except urllib.error.HTTPError as e:
+            try:
+                data = e.read()
+            except Exception:
+                data = b""
+            if not data:
+                data = json.dumps({"type": "upstream_error", "status": e.code},
+                                  ensure_ascii=False).encode("utf-8")
+            ctype = (e.headers.get("Content-Type") if e.headers
+                     else "application/json; charset=utf-8")
+            return self._send(e.code, data, ctype)
+        except urllib.error.URLError as e:
+            if isinstance(e.reason, (socket.timeout, TimeoutError)):
+                return self._send(504, {"type": "timeout", "message": "上游 8 秒未响应"})
+            return self._send(502, {"type": "upstream_unreachable",
+                                    "message": str(e.reason)[:120]})
+        except (socket.timeout, TimeoutError):
+            return self._send(504, {"type": "timeout", "message": "上游 8 秒未响应"})
+        except Exception as e:
+            return self._send(502, {"type": "upstream_unreachable", "message": str(e)[:120]})
+
     def do_POST(self):
         path = urlparse(self.path).path
+        if path == "/api/proxy":
+            return self._proxy()
         if path != "/api/check":
             return self._send(404, {"error": "not found"})
         try:

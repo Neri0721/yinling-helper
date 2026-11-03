@@ -22,3 +22,6 @@ desktop.ini
 
 # 原始语料不入库（第三方转载内容 + 体积大）
 kb.json
+
+# 本地全量语料（不入库）
+kb.json.local

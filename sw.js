@@ -1,5 +1,5 @@
 // Service Worker：缓存界面外壳，离线也能打开（核查仍需联网到电脑）
-const CACHE = "yinling-v1";
+const CACHE = "yinling-v2";
 const SHELL = ["/m", "/icon-192.png", "/icon-512.png", "/manifest.webmanifest"];
 
 self.addEventListener("install", (e) => {
