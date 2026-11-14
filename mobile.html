@@ -167,6 +167,34 @@
   }
   .modeNote.bad{background:#fdecec;border-color:#f3b4b4;color:#a31515}
 
+  /* 问儿女：老人自己查不动时的退路 */
+  .ask{
+    width:100%;margin-top:12px;height:48px;border-radius:12px;
+    background:#f4f7ff;border:1px solid #d7e4f7;color:#1f3d6b;
+    font-size:.98rem;font-weight:600
+  }
+
+  /* 首次使用引导 */
+  .guide{
+    position:fixed;inset:0;z-index:60;background:rgba(24,30,40,.55);
+    display:flex;align-items:center;justify-content:center;padding:20px
+  }
+  .guide-in{
+    background:#fff;border-radius:20px;max-width:420px;width:100%;padding:24px 22px 20px;
+    box-shadow:0 20px 60px rgba(0,0,0,.25)
+  }
+  .guide-in h2{margin:0 0 14px;font-size:1.25rem}
+  .guide-step{display:flex;gap:12px;align-items:flex-start;margin-bottom:14px}
+  .guide-num{
+    flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:#eef4ff;color:#1f6feb;
+    display:flex;align-items:center;justify-content:center;font-weight:800
+  }
+  .guide-step p{margin:0;font-size:1rem;line-height:1.55}
+  .guide-in button{
+    width:100%;margin-top:8px;height:52px;border:none;border-radius:14px;
+    background:#1f6feb;color:#fff;font-size:1.05rem;font-weight:700
+  }
+
   /* 状态 */
   .hint{font-size:.82rem;color:#a9a294;text-align:center;padding:6px 0 0}
   .loading{display:flex;flex-direction:column;align-items:center;gap:12px;padding:44px 0;color:var(--dim)}
@@ -195,12 +223,23 @@
 </header>
 
 <main>
+
+<div class="guide" id="guide" hidden>
+  <div class="guide-in">
+    <h2>三步就能查</h2>
+    <div class="guide-step"><div class="guide-num">1</div><p>看到可疑的消息，先<b>截图</b>或<b>拍下来</b></p></div>
+    <div class="guide-step"><div class="guide-num">2</div><p>点下面的 <b>📷 拍张照</b>，把图发进来</p></div>
+    <div class="guide-step"><div class="guide-num">3</div><p>看结论，右下角可以把结果<b>发给子女</b></p></div>
+    <button id="guideOk" type="button">知道了，开始用</button>
+  </div>
+</div>
   <section class="card home" id="home">
     <p class="homeLead">您想怎么查？</p>
     <div class="big-actions">
       <button class="big primary" id="btnPhoto" type="button"><span class="ico">📷</span>拍张照</button>
       <button class="big" id="btnTalk" type="button"><span class="ico">🎤</span>说句话</button>
     </div>
+    <button class="ask" id="btnAskFamily" type="button">拿不准？把这条消息发给儿女帮我看</button>
     <p class="hint" id="homeHint">查不到官方说法时，我会直接说“查不到”，不会瞎猜。</p>
   </section>
 
@@ -260,6 +299,7 @@
       <button class="primary" id="btnSpeak">🔊 念给我听</button>
       <button id="btnShare">📋 发给子女</button>
     </div>
+    <button class="ask" id="btnAskHelp" type="button">还拿不准？让儿女帮我看这条</button>
     <button class="again" id="btnAgain" type="button">↩ 再查一条</button>
   </div>
 </main>
@@ -565,6 +605,56 @@
       noteBox("演示模式：未接入 OCR，拍照只能返回示例文字", true);
     }
   }).catch(() => {});
+
+  // ---------------- 把问题发给儿女 ----------------
+  // 老人自己查不动时的退路：不要求他描述清楚，直接把原话交给孩子。
+  function familyText(source) {
+    const t = (source || "").trim();
+    if (t) return "我在群里看到这条消息：" + t + "。你帮我看看是不是真的？";
+    return "我收到一条消息，拿不准真假，你帮我看看。";
+  }
+
+  async function askFamily(source) {
+    const msg = familyText(source);
+    if (navigator.share) {
+      try {
+        await navigator.share({ text: msg });
+        return;
+      } catch (e) { /* 取消或环境不支持，继续走复制 */ }
+    }
+    try {
+      await navigator.clipboard.writeText(msg);
+      noteBox("已经复制好了。打开微信，粘贴发给儿女就行。");
+    } catch (e) {
+      prompt("复制下面这段话，发给儿女：", msg);
+    }
+  }
+
+  const askHome = $("btnAskFamily");
+  if (askHome) askHome.onclick = () => askFamily(input.value);
+
+  const askHelp = $("btnAskHelp");
+  if (askHelp) {
+    askHelp.onclick = () => {
+      const src = (last && (last.check_subject || last.ocr_text)) || input.value;
+      askFamily(src);
+    };
+  }
+
+  // 首次使用引导：只出现一次
+  (() => {
+    const g = $("guide");
+    if (!g) return;
+    if (localStorage.getItem("yl.guide") !== "1") {
+      g.hidden = false;
+      document.body.style.overflow = "hidden";
+    }
+    $("guideOk").onclick = () => {
+      localStorage.setItem("yl.guide", "1");
+      g.hidden = true;
+      document.body.style.overflow = "";
+    };
+  })();
 
   // 注册 Service Worker（可添加到主屏幕、离线打开界面）
   if ("serviceWorker" in navigator) {

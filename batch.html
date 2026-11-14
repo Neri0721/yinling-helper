@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>批量核查 · 银龄核查助手</title>
+<style>
+  :root{--bg:#f6f4ef;--panel:#fff;--line:#e3ddd2;--text:#1f2733;--dim:#5f6b7a;--brand:#1f6feb;--hi:#c62828;--mid:#e08600;--none:#6b7280}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:"PingFang SC","Microsoft YaHei UI",system-ui,sans-serif;font-size:15px;line-height:1.6}
+  header{background:#fff;border-bottom:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:12px}
+  .logo{width:34px;height:34px;border-radius:10px;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
+  header h1{font-size:1.1rem;margin:0}
+  header p{margin:0;font-size:.78rem;color:var(--dim)}
+  header .spacer{flex:1}
+  header a{font-size:.82rem;color:var(--brand);text-decoration:none}
+  main{max-width:1100px;margin:0 auto;padding:20px 24px 60px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+  .label{font-weight:700;font-size:.95rem;margin:0 0 8px}
+  textarea{width:100%;min-height:150px;resize:vertical;font:inherit;padding:12px;border:2px solid var(--line);border-radius:10px;background:#fdfcf9}
+  textarea:focus{outline:none;border-color:var(--brand)}
+  .row{display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap}
+  button{font:inherit;border:none;border-radius:10px;padding:10px 18px;cursor:pointer;background:#eef2f7;color:#334155}
+  button.primary{background:var(--brand);color:#fff;font-weight:700}
+  button:disabled{opacity:.5;cursor:default}
+  .chips button{font-size:.85rem;padding:6px 12px;border:1px solid var(--line);background:#fff}
+  .hint{font-size:.82rem;color:var(--dim);margin:8px 0 0}
+  table{width:100%;border-collapse:collapse;font-size:.88rem}
+  th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+  th{background:#f8f7f4;font-weight:700;font-size:.8rem;color:var(--dim)}
+  .badge{display:inline-block;padding:2px 9px;border-radius:999px;color:#fff;font-size:.78rem;font-weight:700}
+  .b-hi{background:var(--hi)} .b-mid{background:var(--mid)} .b-none{background:var(--none)}
+  .cell-sub{color:var(--dim);font-size:.8rem;margin-top:2px}
+  .stat{display:flex;gap:22px;flex-wrap:wrap;font-size:.86rem;color:var(--dim);margin-top:12px}
+  .stat b{color:var(--text);font-size:1.05rem}
+  .empty{padding:30px;text-align:center;color:var(--dim)}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">✓</div>
+  <div>
+    <h1>批量核查 · 社区网格员工作台</h1>
+    <p>一次贴多条，逐条对照权威来源；查不到的直接标出来</p>
+  </div>
+  <div class="spacer"></div>
+  <a href="/m">手机版 ↗</a>
+</header>
+
+<main>
+  <section class="panel">
+    <p class="label">把要核实的说法贴进来，一行一条</p>
+    <textarea id="input" placeholder="群里说这个保健品能根治糖尿病，不用吃药了
+网上说下个月养老金发放方式要改，要先填银行卡号
+喝骨头汤能补钙是真的吗"></textarea>
+    <div class="row chips">
+      <span class="hint" style="margin:0">示例：</span>
+      <button data-fill="1">填 3 条示例</button>
+      <button id="clearBtn">清空</button>
+    </div>
+    <div class="row">
+      <button class="primary" id="runBtn">开始批量核查</button>
+      <button id="csvBtn" disabled>导出 CSV</button>
+      <span class="hint" id="progress" style="margin:0"></span>
+    </div>
+    <p class="hint">说明：逐条调用同一套核查链路，不并发轰炸；每条结果都能点开原文核对。</p>
+  </section>
+
+  <section class="panel">
+    <table id="tbl" hidden>
+      <thead>
+        <tr><th style="width:42px">#</th><th style="width:30%">说法</th><th style="width:88px">风险</th><th>结论</th><th style="width:22%">出处</th></tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="empty" id="empty">还没有结果，贴几句话试试</div>
+    <div class="stat" id="stat" hidden></div>
+  </section>
+</main>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const input = $("input"), runBtn = $("runBtn"), csvBtn = $("csvBtn");
+  let rows = [];
+
+  const BADGE = { "高风险": "b-hi", "中风险": "b-mid", "暂无权威结论": "b-none" };
+
+  document.querySelectorAll("[data-fill]").forEach((b) => {
+    b.onclick = () => {
+      input.value = [
+        "群里说这个保健品能根治糖尿病，不用吃药了",
+        "网上说下个月养老金发放方式要改，要先填银行卡号",
+        "喝骨头汤能补钙是真的吗"
+      ].join("\n");
+    };
+  });
+  $("clearBtn").onclick = () => { input.value = ""; input.focus(); };
+
+  function render() {
+    const tb = $("tbody");
+    tb.innerHTML = "";
+    rows.forEach((r, i) => {
+      const tr = document.createElement("tr");
+      const badgeCls = BADGE[r.risk] || "b-none";
+      const src = r.url
+        ? `<a href="${r.url}" target="_blank" rel="noopener">${r.source || "原文"} ↗</a>`
+        : `<span class="cell-sub">${r.source || "无出处"}</span>`;
+      tr.innerHTML = `
+        <td>${i + 1}</td>
+        <td>${escapeHtml(r.text)}${r.subject && r.subject !== r.text ? `<div class="cell-sub">核查对象：${escapeHtml(r.subject)}</div>` : ""}</td>
+        <td><span class="badge ${badgeCls}">${escapeHtml(r.risk)}</span></td>
+        <td>${escapeHtml(r.conclusion || "")}<div class="cell-sub">${escapeHtml(r.action || "")}</div></td>
+        <td>${src}</td>`;
+      tb.appendChild(tr);
+    });
+    $("tbl").hidden = rows.length === 0;
+    $("empty").hidden = rows.length > 0;
+    csvBtn.disabled = rows.length === 0;
+
+    const hi = rows.filter((r) => r.risk === "高风险").length;
+    const none = rows.filter((r) => r.risk === "暂无权威结论").length;
+    $("stat").hidden = rows.length === 0;
+    $("stat").innerHTML = rows.length
+      ? `<span>共 <b>${rows.length}</b> 条</span><span>高风险 <b>${hi}</b> 条</span>
+         <span>查不到 <b>${none}</b> 条</span><span>有出处 <b>${rows.filter((r) => r.url).length}</b> 条</span>`
+      : "";
+  }
+
+  function escapeHtml(s) {
+    return String(s || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  async function checkOne(text) {
+    const res = await fetch("/api/check", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const d = await res.json();
+    if (d.type === "clarify") {
+      return { text, risk: "暂无权威结论", conclusion: "说法太短，建议补充细节", action: "", url: "", source: "" };
+    }
+    return {
+      text,
+      subject: d.check_subject || "",
+      risk: d.risk_level || "暂无权威结论",
+      conclusion: d.conclusion || "",
+      action: d.action_advice || "",
+      url: d.source_url || "",
+      source: d.source_name || "",
+    };
+  }
+
+  runBtn.onclick = async () => {
+    const lines = input.value.split("\n").map((s) => s.trim()).filter((s) => s.length >= 4);
+    if (!lines.length) { input.focus(); return; }
+    rows = [];
+    render();
+    runBtn.disabled = true;
+    csvBtn.disabled = true;
+    for (let i = 0; i < lines.length; i++) {
+      $("progress").textContent = `正在核查 ${i + 1}/${lines.length}…`;
+      try {
+        rows.push(await checkOne(lines[i]));
+      } catch (e) {
+        rows.push({ text: lines[i], risk: "暂无权威结论", conclusion: "请求失败：" + e.message, action: "", url: "", source: "" });
+      }
+      render();
+    }
+    $("progress").textContent = `完成 ${lines.length} 条`;
+    runBtn.disabled = false;
+    csvBtn.disabled = false;
+  };
+
+  csvBtn.onclick = () => {
+    const esc = (v) => '"' + String(v || "").replace(/"/g, '""') + '"';
+    const head = ["序号", "说法", "风险等级", "结论", "行动建议", "出处", "链接"];
+    const body = rows.map((r, i) => [i + 1, r.text, r.risk, r.conclusion, r.action, r.source, r.url].map(esc).join(","));
+    const csv = "\ufeff" + [head.map(esc).join(",")].concat(body).join("\r\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "批量核查结果.csv";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+})();
+</script>
+</body>
+</html>
