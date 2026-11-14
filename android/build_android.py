@@ -63,7 +63,7 @@ android {
 }
 
 dependencies {
-    implementation 'androidx.appcompat:appcompat:1.6.1'
+    // 不需要 AppCompat：Activity 用系统自带的即可
 }
 '''
 
