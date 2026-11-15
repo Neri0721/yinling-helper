@@ -17,15 +17,28 @@ MODEL = "qwen-ling"
 TIMEOUT = 120
 
 _warm = False
+_avail_cache = (0.0, False)   # (时间戳, 结果)
+AVAIL_TTL = 30                # 秒：30 秒内不重复探测，避免一次核查等 5 次超时
 
 
 def available():
+    """探测本地模型是否可用。
+
+    这个函数在一次核查里会被调用四五次；模型没开时每次都要等 3 秒超时，
+    单次请求会从几十毫秒涨到 10 秒以上。所以加一层短期缓存。
+    """
+    global _avail_cache
+    ts, val = _avail_cache
+    if time.time() - ts < AVAIL_TTL:
+        return val
     try:
-        with urllib.request.urlopen(OLLAMA + "/api/tags", timeout=3) as r:
+        with urllib.request.urlopen(OLLAMA + "/api/tags", timeout=2) as r:
             tags = json.loads(r.read().decode())
-        return any(m.get("name", "").startswith(MODEL) for m in tags.get("models", []))
+        val = any(m.get("name", "").startswith(MODEL) for m in tags.get("models", []))
     except Exception:
-        return False
+        val = False
+    _avail_cache = (time.time(), val)
+    return val
 
 
 def _post(path, payload, timeout=TIMEOUT):

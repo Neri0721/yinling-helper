@@ -188,12 +188,12 @@ def kb_match(text, kb, limit=1):
             common = q & h
             if len(common) < min_common:
                 continue
-            score = len(common) / max(min(len(q), 8), 1)
-            # 标题加成：老人问的都是短句，正文覆盖率算不出高分，
-            # 但若待核查说法与标题重合两个以上词，基本就是同一件事。
-            tcommon = q & keywords(it.get("title", ""))
-            if len(tcommon) >= 2:
-                score += 0.15
+            # 覆盖率打分：命中词数 ÷ 查询词数，落在 0~1，长句不会虚高。
+            # 旧写法除以 min(len(q),8)，长查询能算出 1.65 这种分数，
+            # 实测 120 条编造说法里有 116 条被判成"有证据"，等于什么都敢判。
+            score = len(common) / max(len(q), 1)
+            if len(common) >= 3:
+                score += 0.05
             key = it.get("url") or it.get("title")
             if key not in best or score > best[key][0]:
                 best[key] = (score, it)
@@ -576,9 +576,9 @@ def build_card(text, kb):
     ds_best = None
     for s, it in (hits or []):
         tier = it.get("tier", "official")
-        if tier == "official" and best is None and s >= 0.45:
+        if tier == "official" and best is None and s >= 0.50:
             best = (s, it)
-        elif tier == "dataset" and ds_best is None and s >= 0.45:
+        elif tier == "dataset" and ds_best is None and s >= 0.50:
             ds_best = (s, it)
 
     # 复核：知识库条目必须和用户问的是同一件事，否则宁可判“查不到”
